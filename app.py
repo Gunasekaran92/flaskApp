@@ -5,75 +5,71 @@ import json
 import time
 import datetime
 from datetime import date
-
-#Read and Write Database
-import sqlalchemy
-from sqlalchemy import create_engine
-from sqlalchemy import update
-from sqlalchemy import text
-
-import pyodbc
-import urllib3
-
 from flask_cors import CORS
+import pymssql
 
 
-#Connection to SQL server
-driver = "{ODBC Driver 17 for SQL Server}"
-server = "expenses.database.windows.net"
-database = "expenses"
-user = "gunasekaran9600@gmail.com@expenses"
-password = "Guna@1992"
-
-conn = f"""Driver={driver};Server=tcp:{server},1433;Database={database};
-Uid={user};Pwd={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"""
-
-params = urllib.parse.quote_plus(conn)
-conn_str = 'mssql+pyodbc:///?autocommit=true&odbc_connect={}'.format(params)
-engine = create_engine(conn_str, echo=True)
+#Connection to Azure SQL server
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-conn1 = engine.connect() 
+
 
 @app.route('/donut')
 def donut():
     #Donut Chart
     #Reads from the SQL server table:
-    donut_raw = text(r"select * from dbo.v_donut_chart")
-    result = conn1.execute(donut_raw)
-    donut_df = pd.DataFrame(data=result,columns=['category','value'])
+    conn = pymssql.connect(server='expenses.database.windows.net',user='gunasekaran9600@gmail.com@expenses', password='Guna@1992', database='expenses') 
+    cursor = conn.cursor()
+    cursor.execute(r"select * from dbo.v_donut_chart")  
+    row = cursor.fetchone() 
+    donut= []
+    while row:
+        donut.append(row)  
+        row = cursor.fetchone()
+    conn.close()
+    donut_df = pd.DataFrame(data=donut,columns=['category','value'])
     #donut_df['value'] = donut_df['value'].astype(str) + "%"
     print(donut_df)
     donut_json= donut_df.assign(**donut_df.select_dtypes(['datetime']).astype(str).to_dict('list') ).to_json(orient="records")
-    return donut_json
+    return donut_json  
     
-
-conn2 = engine.connect()    
 
 @app.route('/line')
 def line():
     #Donut Chart
     #Reads from the SQL server table:
-    line_raw = text(r"select * from dbo.v_line_chart")
-    result = conn2.execute(line_raw)
-    line_df = pd.DataFrame(data=result,columns=['Amount','month'])
+    conn = pymssql.connect(server='expenses.database.windows.net',user='gunasekaran9600@gmail.com@expenses', password='Guna@1992', database='expenses') 
+    cursor = conn.cursor()
+    cursor.execute(r"select * from dbo.v_line_chart")  
+    row = cursor.fetchone() 
+    line= []
+    while row:
+        line.append(row)  
+        row = cursor.fetchone()
+    conn.close()
+    line_df = pd.DataFrame(data=line,columns=['Amount','month'])
     #line_df['Amount'] = line_df['Amount'].astype(str) + "$"
     line_json= line_df.assign(**line_df.select_dtypes(['datetime']).astype(str).to_dict('list') ).to_json(orient="records")
     return line_json
-    
-
-conn3 = engine.connect()    
+   
 
 @app.route('/summary')    
 def summary():
     #Donut Chart
     #Reads from the SQL server table:
-    summary_raw = text(r"select * from dbo.v_grouped_expenses")
-    result = conn3.execute(summary_raw)
-    new = pd.DataFrame(data=result,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
+    conn = pymssql.connect(server='expenses.database.windows.net',user='gunasekaran9600@gmail.com@expenses', password='Guna@1992', database='expenses') 
+    cursor = conn.cursor()
+    cursor.execute(r"select * from dbo.v_grouped_expenses")  
+    row = cursor.fetchone() 
+    summary= []
+    while row:
+        summary.append(row)  
+        row = cursor.fetchone()
+    conn.close()
+    new = pd.DataFrame(data=summary,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
        'Non-Payee', 'PaidFor', 'ExpensesFor', 'PaidForArun', 'PaidForGeo',
        'PaidForGuna', 'PaidForVinoth', 'PayerArun', 'PayerGeo', 'PayerGuna','GroceryGrouped'])
     #Create a summary dataframe
@@ -90,15 +86,20 @@ def summary():
     return summary_json
 
 
-conn4 = engine.connect()    
-    
 @app.route('/metric')
 def metric():
     #KPI
     #Reads from the SQL server table:
-    summary_raw = text(r"select * from dbo.v_grouped_expenses")
-    result = conn4.execute(summary_raw)
-    new = pd.DataFrame(data=result,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
+    conn = pymssql.connect(server='expenses.database.windows.net',user='gunasekaran9600@gmail.com@expenses', password='Guna@1992', database='expenses') 
+    cursor = conn.cursor()
+    cursor.execute(r"select * from dbo.v_grouped_expenses")  
+    row = cursor.fetchone() 
+    metric= []
+    while row:
+        metric.append(row)  
+        row = cursor.fetchone()
+    conn.close()
+    new = pd.DataFrame(data=metric,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
        'Non-Payee', 'PaidFor', 'ExpensesFor', 'PaidForArun', 'PaidForGeo',
        'PaidForGuna', 'PaidForVinoth', 'PayerArun', 'PayerGeo', 'PayerGuna','GroceryGrouped'])
     #Create a summary dataframe
@@ -125,15 +126,21 @@ def metric():
     return metric_final     
     
 
-conn5 = engine.connect()    
-
 @app.route('/metricO')    
 def metricO():
     #KPI
     #Reads from the SQL server table:
-    summary_raw = text(r"select * from dbo.v_grouped_expenses")
-    result = conn5.execute(summary_raw)
-    new = pd.DataFrame(data=result,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
+    conn = pymssql.connect(server='expenses.database.windows.net',user='gunasekaran9600@gmail.com@expenses', password='Guna@1992', database='expenses') 
+    cursor = conn.cursor()
+    cursor.execute(r"select * from dbo.v_grouped_expenses")  
+    row = cursor.fetchone() 
+    metric1= []
+    while row:
+        metric1.append(row)  
+        row = cursor.fetchone()
+     
+    conn.close()
+    new = pd.DataFrame(data=metric1,columns=['Index','Id','Date', 'Grocery', 'Payer', 'Amount', 'Payer1', 'Payee',
        'Non-Payee', 'PaidFor', 'ExpensesFor', 'PaidForArun', 'PaidForGeo',
        'PaidForGuna', 'PaidForVinoth', 'PayerArun', 'PayerGeo', 'PayerGuna','GroceryGrouped'])
     date_df = new.copy()
@@ -155,7 +162,8 @@ def metricO():
     new_metrict.fillna(0,inplace=True)
     new_metrict = new_metrict.iloc[:,1:]
     metric_final = new_metrict.to_json(index=True,orient="records") 
-    return metric_final    
+    return metric_final      
+    
 
 if __name__ =='__main__':
     app.run()
